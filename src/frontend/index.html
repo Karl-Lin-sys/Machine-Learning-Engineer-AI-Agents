@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cresta AI Support Agent</title>
+    <style>
+        :root {
+            --primary-color: #2D68FF;
+            --bg-color: #F8F9FA;
+            --text-color: #333333;
+            --chat-bg: #FFFFFF;
+            --bot-msg-bg: #F1F3F5;
+            --user-msg-bg: #2D68FF;
+            --user-msg-text: #FFFFFF;
+            --border-color: #E9ECEF;
+            --font-family: 'Inter', -apple-system, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 500px;
+            height: 90vh;
+            background-color: var(--chat-bg);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background-color: var(--chat-bg);
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .chat-header h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #10B981;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.bot {
+            align-self: flex-start;
+            background-color: var(--bot-msg-bg);
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background-color: var(--user-msg-bg);
+            color: var(--user-msg-text);
+            border-bottom-right-radius: 4px;
+        }
+
+        .thinking {
+            font-style: italic;
+            color: #6c757d;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+        }
+
+        .chat-input {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex-grow: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            outline: none;
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .chat-input input:focus {
+            border-color: var(--primary-color);
+        }
+
+        .chat-input button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .chat-input button:hover {
+            background-color: #1A55E0;
+        }
+        
+        .chat-input button:active {
+            transform: scale(0.95);
+        }
+
+        .loader {
+            display: none;
+            align-self: flex-start;
+            padding: 12px 16px;
+            background-color: var(--bot-msg-bg);
+            border-radius: 16px;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .loader span {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background-color: #adb5bd;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        
+        .loader span:nth-child(1) { animation-delay: -0.32s; }
+        .loader span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">
+        <span class="status-dot"></span>
+        <h2>Cresta AI Support</h2>
+    </div>
+    
+    <div class="chat-messages" id="chat-messages">
+        <div class="message bot">
+            Hello! I am the Cresta AI support agent. I can help answer policy questions or check order statuses (e.g. try asking "What is the status of order ORD-12345?").
+        </div>
+    </div>
+    
+    <div class="loader" id="loader">
+        <span></span><span></span><span></span>
+    </div>
+
+    <div class="chat-input">
+        <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off">
+        <button id="send-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<script>
+    const messagesContainer = document.getElementById('chat-messages');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const loader = document.getElementById('loader');
+    
+    // Generate a simple session ID
+    const sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+    
+    const API_URL = 'http://127.0.0.1:8000/chat';
+
+    function addMessage(content, type, intermediateSteps = []) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${type}`;
+        
+        if (type === 'bot' && intermediateSteps && intermediateSteps.length > 0) {
+            // Show reasoning steps for evaluation transparency
+            let reasoningText = '<div class="thinking">';
+            intermediateSteps.forEach(step => {
+                reasoningText += `🔍 Used tool: ${step[0]}<br>`;
+            });
+            reasoningText += '</div>';
+            messageDiv.innerHTML = reasoningText + content.replace(/\\n/g, '<br>');
+        } else {
+            messageDiv.textContent = content;
+        }
+        
+        messagesContainer.appendChild(messageDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    async function sendMessage() {
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        addMessage(text, 'user');
+        userInput.value = '';
+        
+        loader.style.display = 'block';
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: text,
+                    session_id: sessionId
+                })
+            });
+            
+            if (!response.ok) throw new Error('API Error');
+            
+            const data = await response.json();
+            loader.style.display = 'none';
+            addMessage(data.answer, 'bot', data.intermediate_steps);
+            
+            console.log(`Trace ID: ${data.trace_id}`);
+            
+        } catch (error) {
+            loader.style.display = 'none';
+            addMessage('Sorry, there was an error processing your request. Ensure backend is running.', 'bot');
+            console.error(error);
+        }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+</script>
+</body>
+</html>
